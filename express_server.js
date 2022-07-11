@@ -18,6 +18,11 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+app.get("/urls", (req, res) => {
+  const templateUrls = { urls: urlDatabase };
+  res.render("urls_index", templateUrls);
+});
+
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
