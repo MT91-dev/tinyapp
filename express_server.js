@@ -61,6 +61,13 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${tempId}`); // Respond with 'Ok' (we will replace this)
 });
 
+app.post("/urls/:id/delete", (req, res) => {
+  delete urlDatabase[req.params.id];
+  // const templateVars = { urls: urlDatabase }
+  res.redirect(`/urls`);
+  // res.render(("urls_index", templateVars)); // Respond with 'Ok' (we will replace this)
+});
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
