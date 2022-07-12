@@ -68,6 +68,15 @@ app.post("/urls/:id/delete", (req, res) => {
   // res.render(("urls_index", templateVars)); // Respond with 'Ok' (we will replace this)
 });
 
+app.post("/urls/:id/update", (req, res) => {
+  urlDatabase[req.params.id] = req.body.longURL;
+  // console.log(req.body.longURL);
+  // console.log(urlDatabase);
+  // const templateVars = { urls: urlDatabase }
+  res.redirect(`/urls`);
+  // res.render(("urls_index", templateVars)); // Respond with 'Ok' (we will replace this)
+});
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });

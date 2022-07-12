@@ -9,17 +9,25 @@
 </head>
 
 <body>
-    <%- include('partials/_header') %>
+  <%- include('partials/_header') %>
     <div class="card text-center">
       <div class="card-header"></div>
       <div class="card-body">
-        <h5 class="card-title">TinyURL for: <%= longURL %>
-        </h5>
-        <p class="card-text">
-          Short URL ID: <a href="/u/<%= id %>">
-            <%= id %>
-          </a>
-        </p>
+        <h5 class="card-title">TinyURL for: <%= longURL %></h5>
+        <p class="card-text">Short URL ID: <a href="/u/<%= id %>"><%= id %></a></p>
+        <form method="POST" action="/urls/<%= id %>/update">
+          <input type="text" 
+          placeholder="(enter new URL here with http://www.)"
+          class="form-control-sm"
+          type="text"
+          name="longURL"
+          style="width: 300px; margin: 1em"
+          />
+          <input 
+          type="submit" 
+          value="Update" 
+          class="btn btn-outline-info">
+        </form>
       </div>
       <div class="card-footer text-muted"></div>
     </div>
@@ -33,6 +41,6 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
       integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
       crossorigin="anonymous"></script>
-  </body>
+</body>
 
 </html>
