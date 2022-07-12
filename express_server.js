@@ -1,4 +1,5 @@
 const express = require("express");
+const cookieParser = require('cookie-parser')
 const app = express();
 const PORT = 8080; // default port 8080
 
@@ -17,6 +18,7 @@ const urlDatabase = {
 };
 
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -26,8 +28,18 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+// app.get("/urls", (req, res) => {
+//   const templateVars = { urls: urlDatabase };
+//   res.render("urls_index", templateVars);
+// });
+
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  const templateVars = {
+    urls: urlDatabase,
+    username: req.cookies["username"],
+    // ... any other vars
+  };
+  console.log("templateVars", templateVars);
   res.render("urls_index", templateVars);
 });
 
@@ -54,7 +66,7 @@ app.get("/hello", (req, res) => {
 app.post("/urls", (req, res) => {
   const tempId = generateRandomString();
   urlDatabase[tempId] = req.body.longURL;
-  console.log(urlDatabase);
+  // console.log(urlDatabase);
   // console.log(req.body); // Log the POST request body to the console
   // console.log(req.body.longURL); // Log the POST request body to the console
   // console.log(urlDatabase, "Did it work?");
@@ -75,6 +87,22 @@ app.post("/urls/:id/update", (req, res) => {
   // const templateVars = { urls: urlDatabase }
   res.redirect(`/urls`);
   // res.render(("urls_index", templateVars)); // Respond with 'Ok' (we will replace this)
+});
+
+
+app.post("/login", (req, res) => {
+  res.cookie("username", req.body.username);
+    // urlDatabase[req.params.id] = req.body.longURL;
+  // console.log(req.body.longURL);
+  // console.log(urlDatabase);
+  // const templateVars = { urls: urlDatabase }
+  res.redirect(`/urls`);
+  // res.render(("urls_index", templateVars)); // Respond with 'Ok' (we will replace this)
+});
+
+app.post("/logout", (req, res) => {
+  res.clearCookie("username");
+  res.redirect("/urls")
 });
 
 app.listen(PORT, () => {
