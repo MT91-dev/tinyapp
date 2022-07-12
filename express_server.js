@@ -38,7 +38,12 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:id", (req, res) => {
   const id = req.params.id
   const templateVars = { id, longURL: urlDatabase[id] };
-  res.render("urls_show", templateVars);
+  res.render("urls_show", templateVars); //200 level status code
+});
+
+app.get("/u/:id", (req, res) => {
+  const id = req.params.id
+  res.redirect(urlDatabase[id]); //300 level status code
 });
 
 app.get("/hello", (req, res) => {
@@ -47,8 +52,13 @@ app.get("/hello", (req, res) => {
 
 //Post request logic that handles how to process the users input that is submittted
 app.post("/urls", (req, res) => {
-  console.log(req.body); // Log the POST request body to the console
-  res.send("Ok"); // Respond with 'Ok' (we will replace this)
+  const tempId = generateRandomString();
+  urlDatabase[tempId] = req.body.longURL;
+  console.log(urlDatabase);
+  // console.log(req.body); // Log the POST request body to the console
+  // console.log(req.body.longURL); // Log the POST request body to the console
+  // console.log(urlDatabase, "Did it work?");
+  res.redirect(`/urls/${tempId}`); // Respond with 'Ok' (we will replace this)
 });
 
 app.listen(PORT, () => {
