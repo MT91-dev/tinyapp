@@ -44,10 +44,24 @@ const validPassword = (password) => {
   return false;
 }
 
+//function to get all URLs by user_id
+const getAllUrlsByUser = (cookie) => {
+  let currentUserObject = {};
+  let currentUser = cookie;
+  for (const url in nestedURLDatabase) {
+    if (nestedURLDatabase[url].userID === currentUser) {
+      let key = url;
+      let value = nestedURLDatabase[url]["longURL"];
+      currentUserObject[key] = value;
+    };
+  };
+  return currentUserObject;
+}
+
 //Users database object
 const users = {
   example: {
-    id: "exampleID",
+    id: "b2xVn2",
     email: "example@example.com",
     password: "example",
   },
@@ -59,50 +73,69 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-// app.get("/urls.json", (req, res) => {
-//   res.json(urlDatabase);
-// });
-
-// app.get("/hello", (req, res) => {
-//   res.send("<html><body>Hello <b>World</b></body></html>\n");
-// });
+const nestedURLDatabase = {
+  example: {
+    userID: "b2xVn2",
+    longURL: "http://www.lighthouselabs.ca"
+  },
+  test: {
+    userID: "9sm5xK",
+    longURL: "http://www.google.com"
+  },
+};
 
 app.get("/", (req, res) => {
+  let currentObject = getAllUrlsByUser(req.cookies["user_id"]);
   const templateVars = {
-    urls: urlDatabase,
+    urls: currentObject,
     user: validateCookie(req.cookies["user_id"])
-    // username: req.cookies["username"],
   };
-  // console.log("templateVars", templateVars);
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls", (req, res) => {
-  const templateVars = {
-    urls: urlDatabase,
-    user: validateCookie(req.cookies["user_id"])
-    // username: req.cookies["username"],
-  };
-  // console.log("templateVars", templateVars);
-  res.render("urls_index", templateVars);
+  const loginState = validateCookie(req.cookies["user_id"]);
+  if (!loginState) {
+    res.send("Please login to use TinyApp")
+  } else {
+    let currentObject = getAllUrlsByUser(req.cookies["user_id"]);
+    const templateVars = {
+      urls: currentObject,
+      user: validateCookie(req.cookies["user_id"])
+    };
+    // console.log("templateVars", templateVars);
+    res.render("urls_index", templateVars);
+  }
 });
 
 app.get("/urls/new", (req, res) => {
-  const templateVars = {
-    user: validateCookie(req.cookies["user_id"])
-    // username: req.cookies["username"],
-  };
-  res.render("urls_new", templateVars);
+  const loginState = validateCookie(req.cookies["user_id"]);
+  if (!loginState) {
+    res.redirect(`/login`);
+  } else {
+    const templateVars = {
+      user: validateCookie(req.cookies["user_id"])
+      // username: req.cookies["username"],
+    };
+    res.render("urls_new", templateVars);
+  }
 });
 
 app.get("/urls/:id", (req, res) => {
-  const id = req.params.id
-  const templateVars = {
-    id,
-    longURL: urlDatabase[id],
-    user: validateCookie(req.cookies["user_id"])
-  };
-  res.render("urls_show", templateVars); //200 level status code
+  const loginState = validateCookie(req.cookies["user_id"]);
+  const currentUserObject = getAllUrlsByUser(req.cookies["user_id"]);
+  if (!loginState){
+    res.send("Please login to use TinyApp")
+  } else if (currentUserObject[req.params.id] === undefined) {
+    res.send("You do not have permissions to view or change this URL")
+  } else {
+    const templateVars = {
+      id: req.params.id,
+      longURL: currentUserObject[req.params.id],
+      user: validateCookie(req.cookies["user_id"])
+    };
+    res.render("urls_show", templateVars); //200 level status code
+  }
 });
 
 app.get("/u/:id", (req, res) => {
@@ -111,39 +144,62 @@ app.get("/u/:id", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  const templateVars = {
-    id: req.params.id,
-    longURL: urlDatabase[req.params.id],
-    user: validateCookie(req.cookies["user_id"])
-  };
-  res.render("urls_registration", templateVars);
+  const loginState = validateCookie(req.cookies["user_id"]);
+  if (loginState) {
+    res.redirect(`/urls`);
+  } else {
+    const templateVars = {
+      id: req.params.id,
+      longURL: urlDatabase[req.params.id],
+      user: validateCookie(req.cookies["user_id"])
+    };
+    res.render("urls_registration", templateVars);
+  }
 });
 
 app.get("/login", (req, res) => {
-  const templateVars = {
-    id: req.params.id,
-    longURL: urlDatabase[req.params.id],
-    user: validateCookie(req.cookies["user_id"])
-  };
-  res.render("urls_login", templateVars);
+  const loginState = validateCookie(req.cookies["user_id"]);
+  if (loginState) {
+    res.redirect(`/urls`);
+  } else {
+    const templateVars = {
+      id: req.params.id,
+      longURL: urlDatabase[req.params.id],
+      user: validateCookie(req.cookies["user_id"])
+    };
+    res.render("urls_login", templateVars);
+  }
 });
 
 //Post request logic that handles how to process the users input that is submittted
 app.post("/urls", (req, res) => {
-  const tempId = generateRandomString();
-  urlDatabase[tempId] = req.body.longURL;
-  // console.log(urlDatabase);
-  // console.log(req.body); // Log the POST request body to the console
-  // console.log(req.body.longURL); // Log the POST request body to the console
-  // console.log(urlDatabase, "Did it work?");
-  res.redirect(`/urls/${tempId}`); // Respond with 'Ok' (we will replace this)
+  const loginState = validateCookie(req.cookies["user_id"]);
+  if (!loginState) {
+    res.send("You are unable to shorten the URL because you are either not logged in or are not a registered user.");
+  } else {
+    const tempId = generateRandomString();
+    urlDatabase[tempId] = req.body.longURL;
+    // console.log(urlDatabase);
+    // console.log(req.body); // Log the POST request body to the console
+    // console.log(req.body.longURL); // Log the POST request body to the console
+    // console.log(urlDatabase, "Did it work?");
+    res.redirect(`/urls/${tempId}`); // Respond with 'Ok' (we will replace this)
+  }
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  delete urlDatabase[req.params.id];
-  // const templateVars = { urls: urlDatabase }
-  res.redirect(`/urls`);
-  // res.render(("urls_index", templateVars)); // Respond with 'Ok' (we will replace this)
+  const loginState = validateCookie(req.cookies["user_id"]);
+  const currentUserObject = getAllUrlsByUser(req.cookies["user_id"]);
+  if (!loginState){
+    res.send("Please login to use TinyApp")
+  } else if (currentUserObject[req.params.id] === undefined) {
+    res.send("You do not have permissions to view or change this URL")
+  } else {
+    delete urlDatabase[req.params.id];
+    // const templateVars = { urls: urlDatabase }
+    res.redirect(`/urls`);
+    // res.render(("urls_index", templateVars)); // Respond with 'Ok' (we will replace this)
+  }
 });
 
 app.post("/urls/:id/update", (req, res) => {
