@@ -1,5 +1,7 @@
 const express = require("express");
 const cookieParser = require('cookie-parser')
+const bcrypt = require("bcryptjs");
+const salt = bcrypt.genSaltSync(10);
 const app = express();
 const PORT = 8080; // default port 8080
 
@@ -211,21 +213,21 @@ app.post("/urls/:id/update", (req, res) => {
   // res.render(("urls_index", templateVars)); // Respond with 'Ok' (we will replace this)
 });
 
-
 app.post("/login", (req, res) => {
   if (!getUserByEmail(req.body.email.trim())) {
     res.status(403).send("This user does not exist.")
-  } else if (!validPassword(req.body.password)) {
+  } else if (!bcrypt.compareSync(req.body.password, getUserByEmail(req.body.email).password)) {
     res.status(403).send("The password you have entered is incorrect.")
   } else {
     res.cookie("user_id", getUserByEmail(req.body.email).id);
     res.redirect(`/urls`);
   }
+  console.log(users);
 });
 
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
-  res.redirect("/urls")
+  res.redirect("/login")
 });
 
 app.post("/register", (req, res) => {
@@ -236,12 +238,14 @@ app.post("/register", (req, res) => {
     res.status(400).send("Sorry, but that email already exists!")
   } else {
     res.cookie("user_id", userId);
+    const hashedPassword = bcrypt.hashSync(req.body.password, salt);
     users[userId] = {
       id: userId,
       email: req.body.email,
-      password: req.body.password,
+      password: hashedPassword,
     }
   };
+  console.log(users);
   res.redirect(`/urls`);
 });
 
