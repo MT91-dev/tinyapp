@@ -46,9 +46,10 @@ const nestedURLDatabase = {
   },
 };
 
-//requiring helper functions
+//requiring helper functions from helpers.js
 const { generateRandomString, validateCookie, getUserByEmail, validPassword, getAllUrlsByUser } = require('./helpers');
 
+//GET request for home page that takes all urls by current user and passes it to urls_index as an object.
 app.get("/", (req, res) => {
   let currentObject = getAllUrlsByUser(req.session.user_id, nestedURLDatabase);
   const templateVars = {
@@ -58,6 +59,8 @@ app.get("/", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+//GET request for /urls page which checks if user is logged in via cookie session, send HTML message is user is not logged in, 
+//otherwise displays URLs for user.
 app.get("/urls", (req, res) => {
   const loginState = validateCookie(req.session.user_id, users);
   if (!loginState) {
@@ -68,11 +71,12 @@ app.get("/urls", (req, res) => {
       urls: currentObject,
       user: validateCookie(req.session.user_id, users)
     };
-    // console.log("templateVars", templateVars);
     res.render("urls_index", templateVars);
   }
 });
 
+//GET request for when user wants to make new url, first checks if user is logged in and redirects to login 
+//page if user is not, otherwise renders to form in urls_new.ejs
 app.get("/urls/new", (req, res) => {
   const loginState = validateCookie(req.session.user_id, users);
   if (!loginState) {
@@ -80,17 +84,16 @@ app.get("/urls/new", (req, res) => {
   } else {
     const templateVars = {
       user: validateCookie(req.session.user_id, users)
-      // username: req.cookies["username"],
     };
     res.render("urls_new", templateVars);
   }
 });
 
+//GET request for urls page at new ID; first checks if user is logged in, if they are, created object with 
+//url id, url, and user id which is rendered to urls_show.ejs.
 app.get("/urls/:id", (req, res) => {
   const loginState = validateCookie(req.session.user_id, users);
   const currentUserObject = getAllUrlsByUser(req.session.user_id, nestedURLDatabase);
-  // console.log(nestedURLDatabase);
-  // console.log(currentUserObject);
   if (!loginState) {
     res.send("Please login to use TinyApp");
   } else if (currentUserObject[req.params.id] === undefined) {
@@ -101,15 +104,18 @@ app.get("/urls/:id", (req, res) => {
       longURL: currentUserObject[req.params.id],
       user: validateCookie(req.session.user_id, users)
     };
-    res.render("urls_show", templateVars); //200 level status code
+    res.render("urls_show", templateVars);
   }
 });
 
+//GET request that redirects user to correct short url id
 app.get("/u/:id", (req, res) => {
   const id = req.params.id;
-  res.redirect(nestedURLDatabase[id]); //300 level status code
+  res.redirect(nestedURLDatabase[id]);
 });
 
+//GET request that checks if user is logged in via cookie session. If user is logged in, redirects to /urls 
+//page, otherwise, creates new user object and renders to urls_registration.ejs.
 app.get("/register", (req, res) => {
   const loginState = validateCookie(req.session.user_id, users);
   if (loginState) {
@@ -124,6 +130,8 @@ app.get("/register", (req, res) => {
   }
 });
 
+//GET request that checks if user is logged in via cookie session, if they are, redirects to /urls. 
+//Otherwise, creates new user object and renders to urls_login.ejs.
 app.get("/login", (req, res) => {
   const loginState = validateCookie(req.session.user_id, users);
   if (loginState) {
@@ -138,7 +146,8 @@ app.get("/login", (req, res) => {
   }
 });
 
-//Post request logic that handles how to process the users input that is submittted
+//POST request logic that first checks if user is logged in, if they are not, sends appropriate HTML message.
+//If they are, creates new entry in nestedURLDatabase with unique id and redirects to /urls page.
 app.post("/urls", (req, res) => {
   const loginState = validateCookie(req.session.user_id, users);
   if (!loginState) {
@@ -149,10 +158,12 @@ app.post("/urls", (req, res) => {
       userID: req.session.user_id,
       longURL: req.body.longURL,
     };
-    res.redirect(`/urls/${tempId}`); // Respond with 'Ok' (we will replace this)
+    res.redirect(`/urls/${tempId}`);
   }
 });
 
+//POST request that checks if user is logged in or owns the url the user is trying to delete. Sends appropriate HTML message if user 
+//is not logged in or does not own the url. If user is logged in and owns the url, deletes the url from nestedURLDatabase and redirects to /urls page.
 app.post("/urls/:id/delete", (req, res) => {
   const loginState = validateCookie(req.session.user_id, users);
   const currentUserObject = getAllUrlsByUser(req.session.user_id, nestedURLDatabase);
@@ -166,12 +177,15 @@ app.post("/urls/:id/delete", (req, res) => {
   }
 });
 
+//POST request that allows for user to update url by accessing the url object in the database, and replaces longURL with new URL entered by user, 
+//after which redirects to /urls page.
 app.post("/urls/:id/update", (req, res) => {
   nestedURLDatabase[req.params.id].longURL = req.body.longURL;
   res.redirect(`/urls`);
-  // res.render(("urls_index", templateVars));
 });
 
+//POST request that checks if users inputted email exists and if the password entered belongs to that user. If either is false, sends appropriate HTML message. 
+//If both are true, creates new cookie session and redirects to /urls page.
 app.post("/login", (req, res) => {
   if (!getUserByEmail(req.body.email.trim(), users)) {
     res.status(403).send("This user does not exist.");
@@ -179,18 +193,18 @@ app.post("/login", (req, res) => {
     res.status(403).send("The password you have entered is incorrect.");
   } else {
     req.session.user_id = getUserByEmail(req.body.email, users).id;
-    // res.cookie("user_id", getUserByEmail(req.body.email).id);
     res.redirect(`/urls`);
   }
-  // console.log(users);
 });
 
+//POST request for logout that deletes cookie session and redirects to /urls page.
 app.post("/logout", (req, res) => {
   req.session = null;
-  // res.clearCookie("user_id");
   res.redirect("/login");
 });
 
+//POSt request for registration that first creates randomly generated userID using helper function. Then checks if user inputted valid email and password. 
+//If either is false, sends appropriate HTML message. If both are true, creates a hashed password and generates new object entry in users and redirects to /urls page.
 app.post("/register", (req, res) => {
   const userId = generateRandomString();
   if (!req.body.email.trim() || !req.body.password.trim()) {
@@ -199,7 +213,6 @@ app.post("/register", (req, res) => {
     res.status(400).send("Sorry, but that email already exists!");
   } else {
     req.session.user_id = userId;
-    // res.cookie("user_id", userId);
     const hashedPassword = bcrypt.hashSync(req.body.password, salt);
     users[userId] = {
       id: userId,
@@ -207,10 +220,10 @@ app.post("/register", (req, res) => {
       password: hashedPassword,
     };
   }
-  // console.log(users);
   res.redirect(`/urls`);
 });
 
+//Server is listening on port 8080
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
